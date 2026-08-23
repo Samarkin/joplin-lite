@@ -1,0 +1,5 @@
+# Build results
+/target
+
+# IDE files
+/.idea
