@@ -93,7 +93,12 @@ impl DecodedMd {
             } else if key == "deleted_time" {
                 match u64::from_str(value) {
                     Ok(time) => deleted_time = NonZeroU64::new(time),
-                    Err(e) => return Err(JoplinError::Decode(format!("failed to parse deleted time: {}", e))),
+                    Err(e) => {
+                        return Err(JoplinError::Decode(format!(
+                            "failed to parse deleted time: {}",
+                            e
+                        )));
+                    }
                 }
             } else {
                 warn!("Unsupported property: {}", key);

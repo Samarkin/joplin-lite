@@ -11,7 +11,9 @@ struct Cache {
 
 impl Cache {
     fn new() -> Cache {
-        Cache { children: HashMap::new() }
+        Cache {
+            children: HashMap::new(),
+        }
     }
 
     fn get_children(&self, parent_id: &Option<String>) -> &Vec<DecodedMd> {
@@ -37,7 +39,7 @@ impl JoplinNote {
                 contents: match &d.body {
                     DecodedMdBody::Unencrypted(s) => s.clone(),
                     DecodedMdBody::Encrypted(_) => String::from("<ENCRYPTED>"),
-                }
+                },
             }))
         } else {
             None
@@ -72,7 +74,11 @@ impl JoplinNotebook {
                 DecodedMdBody::Unencrypted(s) => s.clone(),
                 DecodedMdBody::Encrypted(_) => String::from("<ENCRYPTED>"),
             };
-            Some(JoplinNotebook { title, notebooks, notes })
+            Some(JoplinNotebook {
+                title,
+                notebooks,
+                notes,
+            })
         } else {
             None
         }
@@ -102,10 +108,14 @@ impl JoplinDatabase {
         for entry in fs::read_dir(path)? {
             let entry = entry?;
             let path = entry.path();
-            if path.file_stem().is_some_and(|s| s.len() == 32) && path.extension().is_some_and(|s| s == "md") {
+            if path.file_stem().is_some_and(|s| s.len() == 32)
+                && path.extension().is_some_and(|s| s == "md")
+            {
                 match DecodedMd::from_file(&path) {
                     Ok(decoded_node) => {
-                        cache.get_children_mut(&decoded_node.parent_id).push(decoded_node);
+                        cache
+                            .get_children_mut(&decoded_node.parent_id)
+                            .push(decoded_node);
                     }
                     Err(err) => {
                         warn!("Error reading {}: {}", path.to_string_lossy(), err);
@@ -114,7 +124,8 @@ impl JoplinDatabase {
             }
         }
 
-        let notebooks = cache.get_children(&None)
+        let notebooks = cache
+            .get_children(&None)
             .iter()
             .flat_map(|d| JoplinNotebook::from_md(d, &cache))
             .collect();

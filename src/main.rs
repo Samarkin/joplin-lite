@@ -1,6 +1,6 @@
+mod database;
 mod decoder;
 mod error;
-mod database;
 
 use crate::database::JoplinNotebook;
 use database::JoplinDatabase;
