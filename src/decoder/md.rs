@@ -3,6 +3,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
 
+#[derive(PartialEq, Debug)]
 pub enum DecodedMdType {
     Note,
     Folder,
