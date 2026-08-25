@@ -1,5 +1,6 @@
 use crate::error::JoplinError;
 use std::fs;
+use std::num::NonZeroU64;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -20,6 +21,7 @@ pub struct DecodedMd {
     pub tp: DecodedMdType,
     pub id: String,
     pub parent_id: Option<String>,
+    pub deleted_time: Option<NonZeroU64>,
 }
 
 impl DecodedMd {
@@ -38,6 +40,7 @@ impl DecodedMd {
         let mut parent_id = None;
         let mut encryption_applied = false;
         let mut encryption_cipher_text = None;
+        let mut deleted_time = None;
 
         while let Some(line) = it.next() {
             if line.is_empty() {
@@ -87,6 +90,11 @@ impl DecodedMd {
                 if !value.is_empty() {
                     encryption_cipher_text = Some(value.to_string());
                 }
+            } else if key == "deleted_time" {
+                match u64::from_str(value) {
+                    Ok(time) => deleted_time = NonZeroU64::new(time),
+                    Err(e) => return Err(JoplinError::Decode(format!("failed to parse deleted time: {}", e))),
+                }
             } else {
                 warn!("Unsupported property: {}", key);
             }
@@ -121,6 +129,7 @@ impl DecodedMd {
             id,
             parent_id,
             tp,
+            deleted_time,
         })
     }
 }

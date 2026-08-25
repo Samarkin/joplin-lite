@@ -32,7 +32,7 @@ pub struct JoplinNote {
 
 impl JoplinNote {
     fn from_md(d: &DecodedMd) -> Option<Arc<JoplinNote>> {
-        if d.tp == DecodedMdType::Note {
+        if d.tp == DecodedMdType::Note && d.deleted_time.is_none() {
             Some(Arc::new(JoplinNote {
                 contents: match &d.body {
                     DecodedMdBody::Unencrypted(s) => s.clone(),
@@ -57,7 +57,7 @@ pub struct JoplinNotebook {
 
 impl JoplinNotebook {
     fn from_md(d: &DecodedMd, cache: &Cache) -> Option<JoplinNotebook> {
-        if d.tp == DecodedMdType::Folder {
+        if d.tp == DecodedMdType::Folder && d.deleted_time.is_none() {
             let mut notebooks = Vec::new();
             let mut notes = Vec::new();
             for c in cache.get_children(&Some(d.id.clone())) {
