@@ -2,8 +2,7 @@ mod database;
 mod decoder;
 mod error;
 
-use crate::database::JoplinNotebook;
-use database::JoplinDatabase;
+use database::{JoplinDatabase, JoplinNotebook};
 use error::JoplinError;
 use std::env;
 
