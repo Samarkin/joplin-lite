@@ -4,7 +4,7 @@ mod notebook;
 
 use crate::JoplinError;
 use crate::decoder::{DecodedJson, DecodedMd};
-pub use note::JoplinNote;
+pub use master_key::JoplinMasterKey;
 pub use notebook::JoplinNotebook;
 use std::collections::HashMap;
 use std::ffi::OsStr;
@@ -28,13 +28,12 @@ impl Cache {
     }
 
     fn get_children_mut(&mut self, parent_id: &Option<String>) -> &mut Vec<DecodedMd> {
-        self.children
-            .entry(parent_id.clone())
-            .or_insert_with(Vec::new)
+        self.children.entry(parent_id.clone()).or_default()
     }
 }
 
 pub struct JoplinDatabase {
+    master_keys: HashMap<String, JoplinMasterKey>,
     notebooks: Vec<JoplinNotebook>,
 }
 
@@ -42,6 +41,7 @@ impl JoplinDatabase {
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<JoplinDatabase, JoplinError> {
         let path = path.as_ref();
         let mut cache = Cache::new();
+        let mut master_keys = HashMap::new();
         for entry in fs::read_dir(path)? {
             let entry = entry?;
             let path = entry.path();
@@ -66,6 +66,10 @@ impl JoplinDatabase {
                 match DecodedJson::from_file(&path) {
                     Ok(decoded_info) => {
                         info!("Loaded {} master key(s)", decoded_info.master_keys.len());
+                        for decoded_key in decoded_info.master_keys {
+                            let key = JoplinMasterKey::from_decoded(&decoded_key)?;
+                            master_keys.insert(decoded_key.id, key);
+                        }
                     }
                     Err(err) => {
                         let filename = path
@@ -83,7 +87,10 @@ impl JoplinDatabase {
             .iter()
             .flat_map(|d| JoplinNotebook::from_md(d, &cache))
             .collect();
-        Ok(JoplinDatabase { notebooks })
+        Ok(JoplinDatabase {
+            master_keys,
+            notebooks,
+        })
     }
 
     pub fn get_notebooks(&self) -> &Vec<JoplinNotebook> {

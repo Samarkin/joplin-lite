@@ -3,8 +3,8 @@ use std::fmt::{Debug, Display, Formatter};
 
 pub enum JoplinError {
     Io(std::io::Error),
-    SerdeJson(serde_json::Error),
     Decode(String),
+    Encryption(String),
     Usage,
 }
 
@@ -14,8 +14,8 @@ impl Display for JoplinError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Io(err) => write!(f, "I/O error: {}", err),
-            Self::SerdeJson(err) => write!(f, "JSON error: {}", err),
             Self::Decode(err) => write!(f, "decode error: {}", err),
+            Self::Encryption(err) => write!(f, "encryption error: {}", err),
             Self::Usage => write!(f, "usage: joplin-lite <path>"),
         }
     }
@@ -35,6 +35,12 @@ impl From<std::io::Error> for JoplinError {
 
 impl From<serde_json::Error> for JoplinError {
     fn from(value: serde_json::Error) -> Self {
-        Self::SerdeJson(value)
+        Self::Decode(format!("JSON error: {}", value))
+    }
+}
+
+impl From<base64::DecodeError> for JoplinError {
+    fn from(value: base64::DecodeError) -> Self {
+        Self::Decode(format!("Base64 error: {}", value))
     }
 }

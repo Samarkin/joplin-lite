@@ -10,7 +10,7 @@ pub struct JoplinNotebook {
 }
 
 impl JoplinNotebook {
-    pub(crate) fn from_md(d: &DecodedMd, cache: &Cache) -> Option<JoplinNotebook> {
+    pub(super) fn from_md(d: &DecodedMd, cache: &Cache) -> Option<JoplinNotebook> {
         if d.tp == DecodedMdType::Folder && d.deleted_time.is_none() {
             let mut notebooks = Vec::new();
             let mut notes = Vec::new();
