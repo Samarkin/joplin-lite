@@ -5,6 +5,7 @@ pub enum JoplinError {
     Io(std::io::Error),
     Decode(String),
     Encryption(String),
+    Password(String),
     Usage,
 }
 
@@ -16,6 +17,7 @@ impl Display for JoplinError {
             Self::Io(err) => write!(f, "I/O error: {}", err),
             Self::Decode(err) => write!(f, "decode error: {}", err),
             Self::Encryption(err) => write!(f, "encryption error: {}", err),
+            Self::Password(err) => write!(f, "password error: {}", err),
             Self::Usage => write!(f, "usage: joplin-lite <path>"),
         }
     }
@@ -42,5 +44,11 @@ impl From<serde_json::Error> for JoplinError {
 impl From<base64::DecodeError> for JoplinError {
     fn from(value: base64::DecodeError) -> Self {
         Self::Decode(format!("Base64 error: {}", value))
+    }
+}
+
+impl From<aes_gcm::Error> for JoplinError {
+    fn from(_: aes_gcm::Error) -> Self {
+        Self::Encryption(String::from("AES-GCM error"))
     }
 }

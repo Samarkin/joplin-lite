@@ -45,7 +45,7 @@ mod tests {
                 "some_other_field": "With other value"
             }"##,
         )
-            .unwrap();
+        .unwrap();
         assert_eq!(json.master_keys.len(), 1);
         assert_eq!(json.master_keys[0].encryption_method, 7);
         assert_eq!(json.master_keys[0].id, "main-key");
@@ -60,7 +60,7 @@ mod tests {
                 "some_other_field": "With other value"
             }"##,
         )
-            .unwrap();
+        .unwrap();
         assert_eq!(json.master_keys.len(), 0);
     }
 
@@ -71,7 +71,7 @@ mod tests {
                 "some_other_field": "With other value"
             }"##,
         )
-            .unwrap();
+        .unwrap();
         assert_eq!(json.master_keys.len(), 0);
     }
 

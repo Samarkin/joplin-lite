@@ -4,12 +4,14 @@ mod notebook;
 
 use crate::JoplinError;
 use crate::decoder::{DecodedJson, DecodedMd};
+use crate::password::{JoplinEnvPasswordProvider, JoplinPasswordProvider};
 pub use master_key::JoplinMasterKey;
 pub use notebook::JoplinNotebook;
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
+use std::sync::Mutex;
 
 struct Cache {
     children: HashMap<Option<String>, Vec<DecodedMd>>,
@@ -32,13 +34,25 @@ impl Cache {
     }
 }
 
-pub struct JoplinDatabase {
+pub struct JoplinDatabase<P: JoplinPasswordProvider = JoplinEnvPasswordProvider> {
     master_keys: HashMap<String, JoplinMasterKey>,
     notebooks: Vec<JoplinNotebook>,
+    password_provider: Mutex<P>,
 }
 
-impl JoplinDatabase {
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<JoplinDatabase, JoplinError> {
+impl JoplinDatabase<JoplinEnvPasswordProvider> {
+    pub fn from_path<P: AsRef<Path>>(
+        path: P,
+    ) -> Result<JoplinDatabase<JoplinEnvPasswordProvider>, JoplinError> {
+        Self::from_path_with_password(path, JoplinEnvPasswordProvider::new())
+    }
+}
+
+impl<PasswordProvider: JoplinPasswordProvider> JoplinDatabase<PasswordProvider> {
+    pub fn from_path_with_password<P: AsRef<Path>>(
+        path: P,
+        password_provider: PasswordProvider,
+    ) -> Result<JoplinDatabase<PasswordProvider>, JoplinError> {
         let path = path.as_ref();
         let mut cache = Cache::new();
         let mut master_keys = HashMap::new();
@@ -90,6 +104,7 @@ impl JoplinDatabase {
         Ok(JoplinDatabase {
             master_keys,
             notebooks,
+            password_provider: Mutex::new(password_provider),
         })
     }
 

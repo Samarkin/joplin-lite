@@ -1,50 +1,49 @@
 use crate::decoder::DecodedMasterKey;
+use crate::encryption::{ENCRYPTION_METHOD_KEY_V1, EncryptedKeyV1};
 use crate::error::JoplinError;
-use base64::Engine;
-use base64::prelude::BASE64_STANDARD;
-use serde::Deserialize;
+use crate::password::JoplinPasswordProvider;
 use std::sync::Mutex;
 
 enum KeyContents {
-    Encrypted {
-        salt: Vec<u8>,
-        iv: Vec<u8>,
-        ciphertext: Vec<u8>,
-    },
+    EncryptedV1(EncryptedKeyV1),
     Decrypted(Vec<u8>),
 }
 
 pub struct JoplinMasterKey {
+    id: String,
     contents: Mutex<KeyContents>,
 }
 
-#[derive(Deserialize)]
-struct EncryptedContent {
-    salt: String,
-    iv: String,
-    ct: String,
-}
-
-const ENCRYPTION_METHOD_KEY_V1: u32 = 8;
-
 impl JoplinMasterKey {
     pub fn from_decoded(d: &DecodedMasterKey) -> Result<JoplinMasterKey, JoplinError> {
-        if d.encryption_method != ENCRYPTION_METHOD_KEY_V1 {
-            return Err(JoplinError::Encryption(format!(
+        if d.encryption_method == ENCRYPTION_METHOD_KEY_V1 {
+            Ok(JoplinMasterKey {
+                id: d.id.clone(),
+                contents: Mutex::new(KeyContents::EncryptedV1(EncryptedKeyV1::from_json(
+                    &d.content,
+                )?)),
+            })
+        } else {
+            Err(JoplinError::Encryption(format!(
                 "unsupported encryption type {}",
                 d.encryption_method
-            )));
+            )))
         }
-        let content: EncryptedContent = serde_json::from_str(&d.content)?;
-        let salt = BASE64_STANDARD.decode(content.salt)?;
-        let iv = BASE64_STANDARD.decode(content.iv)?;
-        let ciphertext = BASE64_STANDARD.decode(content.ct)?;
-        Ok(JoplinMasterKey {
-            contents: Mutex::new(KeyContents::Encrypted {
-                salt,
-                iv,
-                ciphertext,
-            }),
-        })
+    }
+
+    pub fn get_key<P: JoplinPasswordProvider>(
+        &self,
+        password_provider: &mut P,
+    ) -> Result<Vec<u8>, JoplinError> {
+        let mut contents = self.contents.lock().unwrap();
+        match &*contents {
+            KeyContents::EncryptedV1(key) => {
+                let password = password_provider.get_password(&self.id)?;
+                let decrypted = key.decrypt(password.as_bytes())?;
+                *contents = KeyContents::Decrypted(decrypted.clone());
+                Ok(decrypted)
+            }
+            KeyContents::Decrypted(d) => Ok(d.clone()),
+        }
     }
 }
