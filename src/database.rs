@@ -108,6 +108,14 @@ impl<PasswordProvider: JoplinPasswordProvider> JoplinDatabase<PasswordProvider> 
         })
     }
 
+    fn get_master_key(&self, key_id: &str) -> Result<String, JoplinError> {
+        let key = self.master_keys
+            .get(key_id)
+            .ok_or_else(|| JoplinError::Encryption(String::from("required master key not found")))?;
+        let mut password_provider = self.password_provider.lock().unwrap();
+        Ok(key.get_key(&mut *password_provider)?)
+    }
+
     pub fn get_notebooks(&self) -> &Vec<JoplinNotebook> {
         &self.notebooks
     }

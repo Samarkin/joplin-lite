@@ -17,7 +17,7 @@ pub enum DecodedMdBody {
 }
 
 pub struct DecodedMd {
-    pub body: DecodedMdBody,
+    pub body: DecodedMdBody, // this is more than just a  body
     pub tp: DecodedMdType,
     pub id: String,
     pub parent_id: Option<String>,

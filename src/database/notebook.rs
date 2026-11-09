@@ -15,7 +15,8 @@ impl JoplinNotebook {
             let mut notebooks = Vec::new();
             let mut notes = Vec::new();
             for c in cache.get_children(&Some(d.id.clone())) {
-                if let Some(note) = JoplinNote::from_md(c) {
+                // TODO: DO NOT UNWRAP HERE
+                if let Some(note) = JoplinNote::from_md(c).unwrap() {
                     notes.push(note);
                 }
                 if let Some(note) = JoplinNotebook::from_md(c, cache) {

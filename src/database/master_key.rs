@@ -2,11 +2,12 @@ use crate::decoder::DecodedMasterKey;
 use crate::encryption::{ENCRYPTION_METHOD_KEY_V1, EncryptedKeyV1};
 use crate::error::JoplinError;
 use crate::password::JoplinPasswordProvider;
+use std::fmt::Write;
 use std::sync::Mutex;
 
 enum KeyContents {
     EncryptedV1(EncryptedKeyV1),
-    Decrypted(Vec<u8>),
+    Decrypted(String),
 }
 
 pub struct JoplinMasterKey {
@@ -34,14 +35,18 @@ impl JoplinMasterKey {
     pub fn get_key<P: JoplinPasswordProvider>(
         &self,
         password_provider: &mut P,
-    ) -> Result<Vec<u8>, JoplinError> {
+    ) -> Result<String, JoplinError> {
         let mut contents = self.contents.lock().unwrap();
         match &*contents {
             KeyContents::EncryptedV1(key) => {
                 let password = password_provider.get_password(&self.id)?;
                 let decrypted = key.decrypt(password.as_bytes())?;
-                *contents = KeyContents::Decrypted(decrypted.clone());
-                Ok(decrypted)
+                let mut decoded = String::with_capacity(decrypted.len() * 2);
+                for byte in decrypted {
+                    write!(decoded, "{byte:02x}").unwrap();
+                }
+                *contents = KeyContents::Decrypted(decoded.clone());
+                Ok(decoded)
             }
             KeyContents::Decrypted(d) => Ok(d.clone()),
         }
